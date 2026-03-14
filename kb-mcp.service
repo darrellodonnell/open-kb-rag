@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenKB MCP Server
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=darrellodonnell
+WorkingDirectory=/home/darrellodonnell/projects/open-kb-rag
+EnvironmentFile=/home/darrellodonnell/projects/open-kb-rag/.env.local
+ExecStart=/home/darrellodonnell/projects/open-kb-rag/.venv/bin/python3 -m kb.mcp.server
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

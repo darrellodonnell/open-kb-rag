@@ -3,10 +3,25 @@
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 mcp = FastMCP(
     "kb",
     instructions="Personal knowledge base with RAG. Ingest URLs, query via semantic search.",
+    host="127.0.0.1",
+    port=4001,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[
+            "127.0.0.1:4001",
+            "localhost:4001",
+            "jones.quagga-chicken.ts.net",
+            "jones.quagga-chicken.ts.net:443",
+        ],
+        allowed_origins=[
+            "https://jones.quagga-chicken.ts.net",
+        ],
+    ),
 )
 
 
@@ -121,4 +136,4 @@ def delete_source(source_id: str) -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http")
