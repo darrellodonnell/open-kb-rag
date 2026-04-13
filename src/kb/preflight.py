@@ -44,6 +44,26 @@ def check_supabase() -> bool:
         return False
 
 
+def check_postgres() -> bool:
+    """Verify local PostgreSQL connection by querying the sources table."""
+    try:
+        from kb.db_pg import get_pool
+
+        pool = get_pool()
+        with pool.connection() as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM sources LIMIT 1")
+            cur.fetchall()
+        print("  OK: PostgreSQL connection")
+        return True
+    except Exception as e:
+        print(f"  FAIL: PostgreSQL connection: {e}")
+        return False
+
+
+def check_db() -> bool:
+    return check_postgres() if settings.db_backend == "postgres" else check_supabase()
+
+
 def check_ollama() -> bool:
     """Verify Ollama is reachable."""
     try:
@@ -64,7 +84,7 @@ def run_all() -> bool:
     print("Preflight checks:")
     results = [
         check_storage_path(),
-        check_supabase(),
+        check_db(),
         check_ollama(),
     ]
     passed = all(results)

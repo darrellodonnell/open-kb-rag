@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,9 +23,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- Supabase ---
+    # --- Database backend selection (supabase | postgres) ---
+    db_backend: Literal["supabase", "postgres"] = "supabase"
+
+    # --- Supabase (used when db_backend == "supabase") ---
     supabase_url: str
     supabase_key: str
+
+    # --- Local PostgreSQL (used when db_backend == "postgres") ---
+    database_url: Optional[str] = None
 
     # --- Ollama ---
     ollama_host: str = "http://localhost:11434"

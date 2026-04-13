@@ -54,6 +54,18 @@ def store_source(
     metadata: dict,
 ) -> UUID:
     """Insert a source record and return its UUID."""
+    if settings.db_backend == "postgres":
+        from kb.ingest.storage_pg import store_source as _pg
+
+        return _pg(
+            url=url,
+            title=title,
+            source_type=source_type,
+            notes=notes,
+            chunk_count=chunk_count,
+            markdown_path=markdown_path,
+            metadata=metadata,
+        )
     client = get_client()
     result = (
         client.table("sources")
@@ -80,6 +92,10 @@ def store_chunks(
     content_type: str,
 ) -> None:
     """Insert chunk records with embeddings."""
+    if settings.db_backend == "postgres":
+        from kb.ingest.storage_pg import store_chunks as _pg
+
+        return _pg(source_id, chunks, embeddings, content_type)
     client = get_client()
     from kb.ingest.chunker import count_tokens
 
@@ -107,6 +123,11 @@ def store_tags(source_id: UUID, tags: list[str]) -> None:
     """Insert tags and link them to the source via source_tags."""
     if not tags:
         return
+
+    if settings.db_backend == "postgres":
+        from kb.ingest.storage_pg import store_tags as _pg
+
+        return _pg(source_id, tags)
 
     client = get_client()
 

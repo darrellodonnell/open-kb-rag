@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from kb.config import settings
 from kb.db import get_client
 from kb.ingest.embeddings import embed
 from kb.models import QueryResult
@@ -27,6 +28,17 @@ def query(
     Returns:
         List of QueryResult objects, ordered by similarity descending.
     """
+    if settings.db_backend == "postgres":
+        from kb.query.engine_pg import query as _pg
+
+        return _pg(
+            question,
+            match_count=match_count,
+            similarity_threshold=similarity_threshold,
+            tags=tags,
+            source_type=source_type,
+        )
+
     # Embed the question
     query_embedding = embed(question)
 

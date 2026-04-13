@@ -20,6 +20,11 @@ def list_sources(
     offset: int = 0,
 ) -> list[Source]:
     """List sources with optional filters."""
+    if settings.db_backend == "postgres":
+        from kb.manage.ops_pg import list_sources as _pg
+
+        return _pg(source_type=source_type, tag=tag, limit=limit, offset=offset)
+
     client = get_client()
 
     query = client.table("sources").select(
@@ -51,6 +56,11 @@ def list_sources(
 
 def delete_source(source_id: UUID) -> bool:
     """Delete a source and all its chunks/tags from DB. Also removes markdown from disk."""
+    if settings.db_backend == "postgres":
+        from kb.manage.ops_pg import delete_source as _pg
+
+        return _pg(source_id)
+
     client = get_client()
 
     # Get the source to find the markdown path
