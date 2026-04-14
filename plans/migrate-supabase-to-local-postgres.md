@@ -146,6 +146,19 @@ One-time copy from Supabase → local.
 2. **Postgres binding** — bind to the Tailscale interface on `jones.quagga-chicken.ts.net`. Clients connect via the MagicDNS name (stable across re-registration; IPs can change). Update `postgresql.conf` `listen_addresses` and `pg_hba.conf` to allow the tailnet CIDR (`100.64.0.0/10`) with `scram-sha-256`.
 3. **Supabase** — pause the project after Phase 5 smoke test. Keep paused for 2 weeks as rollback safety net, then delete.
 
+## Phase 7 — Server version upgrade 16 → 17 (retroactive fix, ~30m)
+
+Phase 1 installed PostgreSQL 16 because it's the Ubuntu 24.04 default (zero-config via `apt`). Supabase was actually on PG 17.6, so the migration effectively downgraded the server. This surfaced twice as pain:
+
+1. Phase 4 data migration needed `postgresql-client-17` installed separately to `pg_dump` from Supabase.
+2. Phase 6 backup script produced archives that only pg_restore 17+ could read (because pg17 client silently won PATH resolution inside systemd).
+
+**Fix applied:** upgraded the server with `pg_upgradecluster -m dump 16 main`, dropped 16/main, removed `postgresql-16*` packages. Single-version install now; no more client/server skew. pgvector also bumped 0.6.0 → 0.8.2 as a free side-effect.
+
+Script: [scripts/phase7-upgrade-to-pg17.sh](../scripts/phase7-upgrade-to-pg17.sh).
+
+**Lesson for future provisioning:** always match server major version to whatever is being migrated from (`SELECT version()` on source before choosing local version). Don't default to distro-default if the source is newer.
+
 ## Phase 6 — Backups to S3 (~1h)
 
 1. Install `awscli` on the VM; configure an IAM user with `s3:PutObject` only on `s3://<bucket>/kb-backups/*`.
