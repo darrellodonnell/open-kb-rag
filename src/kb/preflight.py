@@ -17,7 +17,6 @@ def check_storage_path() -> bool:
     if not path.is_dir():
         print(f"  FAIL: Storage path is not a directory: {path}")
         return False
-    # Check writable by attempting to create a temp file
     test_file = path / ".preflight_check"
     try:
         test_file.touch()
@@ -29,25 +28,10 @@ def check_storage_path() -> bool:
     return True
 
 
-def check_supabase() -> bool:
-    """Verify Supabase connection by querying the sources table."""
-    try:
-        from kb.db import get_client
-
-        client = get_client()
-        # Simple query to verify connectivity — will fail if table doesn't exist
-        client.table("sources").select("id").limit(1).execute()
-        print("  OK: Supabase connection")
-        return True
-    except Exception as e:
-        print(f"  FAIL: Supabase connection: {e}")
-        return False
-
-
 def check_postgres() -> bool:
     """Verify local PostgreSQL connection by querying the sources table."""
     try:
-        from kb.db_pg import get_pool
+        from kb.db import get_pool
 
         pool = get_pool()
         with pool.connection() as conn, conn.cursor() as cur:
@@ -58,10 +42,6 @@ def check_postgres() -> bool:
     except Exception as e:
         print(f"  FAIL: PostgreSQL connection: {e}")
         return False
-
-
-def check_db() -> bool:
-    return check_postgres() if settings.db_backend == "postgres" else check_supabase()
 
 
 def check_ollama() -> bool:
@@ -84,7 +64,7 @@ def run_all() -> bool:
     print("Preflight checks:")
     results = [
         check_storage_path(),
-        check_db(),
+        check_postgres(),
         check_ollama(),
     ]
     passed = all(results)

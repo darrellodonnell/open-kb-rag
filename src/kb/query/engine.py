@@ -1,9 +1,10 @@
-"""Semantic search — embed question, call search_chunks RPC, return ranked results."""
+"""Semantic search — embed question, call search_chunks, return ranked results."""
 
 from __future__ import annotations
 
-from kb.config import settings
-from kb.db import get_client
+from psycopg.rows import dict_row
+
+from kb.db import get_pool
 from kb.ingest.embeddings import embed
 from kb.models import QueryResult
 
@@ -28,32 +29,12 @@ def query(
     Returns:
         List of QueryResult objects, ordered by similarity descending.
     """
-    if settings.db_backend == "postgres":
-        from kb.query.engine_pg import query as _pg
-
-        return _pg(
-            question,
-            match_count=match_count,
-            similarity_threshold=similarity_threshold,
-            tags=tags,
-            source_type=source_type,
-        )
-
-    # Embed the question
     query_embedding = embed(question)
 
-    # Call the search_chunks RPC
-    client = get_client()
-    params = {
-        "query_embedding": query_embedding,
-        "match_count": match_count,
-        "similarity_threshold": similarity_threshold,
-    }
-    if tags:
-        params["filter_tags"] = tags
-    if source_type:
-        params["filter_source_type"] = source_type
-
-    result = client.rpc("search_chunks", params).execute()
-
-    return [QueryResult(**row) for row in result.data]
+    pool = get_pool()
+    with pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            "SELECT * FROM search_chunks(%s::vector, %s, %s, %s, %s)",
+            (query_embedding, match_count, similarity_threshold, tags, source_type),
+        )
+        return [QueryResult(**row) for row in cur.fetchall()]
