@@ -57,6 +57,33 @@ Drop a URL (with optional commentary) into the configured Slack channel — the 
 
 ---
 
+## Known limitations
+
+### URL ingest fails on sites that block scrapers
+
+Some publishers return HTTP 403 to automated fetchers (`trafilatura`'s default user agent). This is most common on:
+
+- Medium / Substack / TowardsAI and similar (Cloudflare or Medium anti-scrape)
+- Some paywalled or registration-walled outlets
+- News sites using Akamai/Datadome/PerimeterX bot protection
+
+**Symptom** — Slack logs show:
+
+```text
+trafilatura.downloads ERROR not a 200 response: 403 for URL <url>
+kb.slack.handlers ERROR Failed to ingest URL <url>: Failed to download
+```
+
+**Workarounds today:**
+
+1. Open the article in a browser → save as PDF → drop the PDF into Slack (the PDF path works fine).
+2. Copy-paste the article body and ingest via `ingest_document` (MCP tool) or paste text into Slack.
+3. Use an archive mirror — e.g. `https://archive.ph/newest/<original-url>` — and ingest that.
+
+A longer-term fix is planned: see [plans/ingest-403-workaround.md](plans/ingest-403-workaround.md).
+
+---
+
 ## Setup
 
 See [SETUP.md](./SETUP.md) for full instructions.
